@@ -726,6 +726,12 @@ div.metadata-content {
 	}
 }
 
+.better-properties-unit-container {
+	display: flex;
+	gap: 4px;
+	align-items: center;
+}
+
 .metadata-property[data-better-properties-hide-key="true"]
 	> .metadata-property-key {
 	display: none;
