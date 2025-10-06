@@ -1,11 +1,10 @@
-import { DropdownComponent, TextComponent, ValueComponent } from "obsidian";
-import { CustomPropertyType, PropertySettings } from "../types";
+import { DropdownComponent, TextComponent } from "obsidian";
+import { CustomPropertyType } from "../types";
 import { PropertyWidgetComponentNew } from "../utils";
 import BetterProperties from "~/main";
 import { PropertyRenderContext } from "obsidian-typings";
 
 type UnitValue = { value: number | undefined; unit: string } | undefined;
-type Settings = NonNullable<PropertySettings["unit"]>;
 
 const DEFAULT_UNITS: string[] = [
 	// Metric length
@@ -60,6 +59,60 @@ const DEFAULT_UNITS: string[] = [
 	"min",
 	"h",
 ];
+
+const UNIT_DISPLAY_NAMES: Record<string, string> = {
+	// Metric length
+	"mm": "Millimeter",
+	"cm": "Centimeter", 
+	"m": "Meter",
+	"km": "Kilometer",
+	// Imperial length
+	"in": "Inch",
+	"ft": "Foot",
+	"yd": "Yard",
+	"mi": "Mile",
+	// Metric mass
+	"mg": "Milligram",
+	"g": "Gram",
+	"kg": "Kilogram",
+	"t": "Metric Ton",
+	// Imperial mass
+	"oz": "Ounce",
+	"lb": "Pound",
+	// Volume metric
+	"ml": "Milliliter",
+	"l": "Liter",
+	// Volume imperial
+	"tsp": "Teaspoon",
+	"tbsp": "Tablespoon",
+	"fl oz": "Fluid Ounce",
+	"cup": "Cup",
+	"pt": "Pint",
+	"qt": "Quart",
+	"gal": "Gallon",
+	// Area
+	"mm²": "Square Millimeter",
+	"cm²": "Square Centimeter",
+	"m²": "Square Meter",
+	"km²": "Square Kilometer",
+	"in²": "Square Inch",
+	"ft²": "Square Foot",
+	"yd²": "Square Yard",
+	"acre": "Acre",
+	// Speed
+	"m/s": "Meters per Second",
+	"km/h": "Kilometers per Hour",
+	"mph": "Miles per Hour",
+	// Temperature
+	"°C": "Celsius",
+	"°F": "Fahrenheit",
+	"K": "Kelvin",
+	// Time
+	"ms": "Millisecond",
+	"s": "Second",
+	"min": "Minute",
+	"h": "Hour",
+};
 
 export const renderWidget: CustomPropertyType["renderWidget"] = ({
 	plugin,
@@ -127,7 +180,10 @@ class UnitTypeComponent extends PropertyWidgetComponentNew<"unit", UnitValue> {
 		});
 
 		this.unitComponent = new DropdownComponent(unitEl);
-		this.units.forEach((u) => this.unitComponent.addOption(u, u));
+		this.units.forEach((u) => {
+			const displayName = UNIT_DISPLAY_NAMES[u] || u;
+			this.unitComponent.addOption(u, displayName);
+		});
 
 		const parsed = this.parseValue(initial);
 		this.numberComponent.setValue(
