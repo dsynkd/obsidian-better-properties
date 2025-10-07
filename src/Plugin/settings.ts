@@ -19,6 +19,7 @@ export const betterPropertiesSettingsSchema = v.object({
 	propertyLabelWidth: v.optional(v.number(), undefined),
 	defaultLabelWidth: v.optional(v.string(), "9em"), // not UI facing
 	hiddenPropertyTypes: v.optional(v.array(v.string()), [] satisfies string[]),
+	enableHiddenProperties: v.optional(v.boolean(), true)
 });
 
 export type BetterPropertiesSettings = Prettify<
@@ -37,6 +38,13 @@ export class BetterPropertiesSettingsTab extends PluginSettingTab {
 		const { plugin, containerEl } = this;
 		containerEl.empty();
 		const { settings } = plugin;
+
+		// Set initial body data attribute based on current setting
+		document.body.setAttribute(
+			"data-better-properties-hidden-feature-disabled",
+			(!(settings.enableHiddenProperties ?? true)).toString()
+		);
+
 
 		new Setting(containerEl)
 			.setName("Property label width")
@@ -92,6 +100,23 @@ export class BetterPropertiesSettingsTab extends PluginSettingTab {
 							});
 					})
 					.renderValues();
+			});
+
+		new Setting(containerEl)
+			.setName("Enable Hidden Properties")
+			.setDesc("Allow properties to be marked as hidden.")
+			.addToggle((toggle) => {
+				toggle
+					.setValue(settings.enableHiddenProperties ?? true)
+					.onChange((value) => {
+						settings.enableHiddenProperties = value;
+						plugin.saveSettings();
+						// Set body data attribute to control CSS visibility
+						document.body.setAttribute(
+							"data-better-properties-hidden-feature-disabled",
+							(!value).toString()
+						);
+					});
 			});
 
 		new Setting(containerEl).setHeading().setName("Warnings");
