@@ -15,7 +15,7 @@ export const patchMetadataEditor = (plugin: BetterProperties) => {
 	// patchMetadataEditorProperty(plugin, mdePrototype);
 
 	mdePrototype.createMoreButtonEl = function () {
-		return createMoreButtonEl(this);
+		return createMoreButtonEl(this, plugin);
 	};
 
 	mdePrototype.toggleShowHidden = function () {
@@ -81,12 +81,12 @@ export const resolveMetadataEditorPrototype = (plugin: BetterProperties) => {
 	return metadataEditorPrototype;
 };
 
-const createMoreButtonEl = (that: PatchedMetadataEditor) => {
+const createMoreButtonEl = (that: PatchedMetadataEditor, plugin: BetterProperties) => {
 	if (that.moreButtonEl) {
 		that.moreButtonEl.remove();
 	}
 	that.moreButtonEl = createDiv({
-		cls: "metadata-add-button text-icon-button",
+		cls: "metadata-add-button text-icon-button better-properties-more-button",
 	});
 	setIcon(
 		that.moreButtonEl.createSpan({ cls: "text-button-icon" }),

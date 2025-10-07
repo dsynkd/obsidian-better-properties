@@ -475,6 +475,13 @@ div.metadata-content {
 		display: none;
 	}
 
+	/* When hidden properties feature is disabled, always show hidden properties */
+	&[data-better-properties-hidden-feature-disabled="true"]
+		> div.metadata-properties
+		> div.metadata-property[data-better-properties-hidden="true"] {
+		display: block !important;
+	}
+
 	& > div.metadata-properties {
 		position: relative;
 		& > .better-properties-label-width-resizer {
@@ -736,6 +743,11 @@ div.metadata-content {
 			color: var(--collapse-icon-color-collapsed);
 		}
 	}
+}
+
+/* Hide collapse indicator when hidden properties feature is disabled */
+body[data-better-properties-hidden-feature-disabled="true"] .better-properties-properties-property-collapse-indicator {
+	display: none !important;
 }
 
 .better-properties-array-sub-remove {
