@@ -35,6 +35,15 @@
 		"second": "Second"
 	},
 	"customPropertyTypes": {
+    "unit": {
+      "name": "Unit",
+      "settings": {
+        "decimalPlaces": {
+          "title": "Decimal places",
+          "desc": "Round numeric input to this many decimal places."
+        }
+      }
+    },
 		"created": {
 			"name": "Created",
 			"settings": {
