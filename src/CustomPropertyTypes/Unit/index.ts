@@ -20,10 +20,5 @@ export const unitPropertyType: CustomPropertyType = {
 };
 
 export const unitSettingsSchema = v.optional(
-	v.object({
-		decimalPlaces: v.optional(v.number()),
-		allowedUnits: v.optional(v.array(v.string())),
-	})
+	v.object({})
 ) satisfies PropertyTypeSchema;
-
-

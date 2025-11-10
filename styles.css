@@ -791,3 +791,16 @@ div.metadata-content {
 		display: flex;
 	}
 }
+
+.better-properties-unit-number {
+	& input[type="number"] {
+		width: auto;
+		min-width: 3ch;
+		max-width: 15ch;
+		background-color: transparent;
+	}
+}
+
+.better-properties-unit-display {
+	cursor: text;
+}

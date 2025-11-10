@@ -40,10 +40,6 @@
         "decimalPlaces": {
           "title": "Decimal places",
           "desc": "Round numeric input to this many decimal places."
-        },
-        "allowedUnits": {
-          "title": "Allowed units",
-          "desc": "Comma-separated list of units to show. Leave empty for all common metric and imperial units."
         }
       }
     },

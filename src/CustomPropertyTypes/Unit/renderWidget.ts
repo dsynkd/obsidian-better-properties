@@ -89,64 +89,134 @@ class UnitTypeComponent extends PropertyWidgetComponentNew<"unit", UnitValue> {
 
 	numberComponent!: TextComponent;
 	unitComponent!: DropdownComponent;
-	units: string[] = [];
+	displayEl!: HTMLDivElement;
+	editContainer!: HTMLDivElement;
+	units: Record<string, string> = {};
+	isEditing = false;
 
 	constructor(
 		plugin: BetterProperties,
 		el: HTMLElement,
-		public initial: unknown,
+		initial: unknown,
 		ctx: PropertyRenderContext
 	) {
 		super(plugin, el, initial, ctx);
 
-		const settings = this.getSettings();
-		this.units = settings?.allowedUnits?.length
-			? settings.allowedUnits
-			: Object.keys(DEFAULT_UNITS);
+		this.units = DEFAULT_UNITS;
 
-		const container = el.createDiv({ 
-			cls: "better-properties-unit-container"
-		});
-		const numberEl = container.createDiv({ cls: "better-properties-unit-number" });
-		const unitEl = container.createDiv({ cls: "better-properties-unit-select" });
+		// Create display view
+		this.createDisplayView(el)
+		this.createEditContainer(el);
 
-		this.numberComponent = new TextComponent(numberEl);
-		this.numberComponent.inputEl.type = "number";
-		if (settings?.decimalPlaces !== undefined) {
-			this.numberComponent.inputEl.step = (1 / 10 ** settings.decimalPlaces).toString();
-		}
-
-		// Make the input width adjust to content
-		this.numberComponent.inputEl.style.width = "auto";
-		this.numberComponent.inputEl.style.minWidth = "3ch";
-		this.numberComponent.inputEl.style.maxWidth = "15ch";
-		
-		// Add event listener to adjust width on input
-		this.numberComponent.inputEl.addEventListener("input", () => {
-			this.adjustInputWidth();
-		});
-
-		this.unitComponent = new DropdownComponent(unitEl);
-		this.units.forEach((u) => {
-			// const abbreviation = DEFAULT_UNITS[u] || u;
-			this.unitComponent.addOption(u, u);
-		});
-
+		// Set initial values
 		const parsed = this.parseValue(initial);
 		this.numberComponent.setValue(
 			parsed?.value === undefined ? "" : String(parsed?.value ?? "")
 		);
 		this.unitComponent.setValue(parsed?.unit ?? this.units[0]);
 
-		this.numberComponent.onChange(() => this.commit());
-		this.unitComponent.onChange(() => this.commit());
-
 		// Adjust width for initial value
 		this.adjustInputWidth();
 
+		// Update display with initial value
+		this.updateDisplay();
+
 		this.onFocus = () => {
+			this.enterEditMode();
 			this.numberComponent.inputEl.focus();
 		};
+	}
+
+	private createDisplayView(el: HTMLElement) {
+		this.displayEl = el.createDiv();
+		this.displayEl.addClasses(['better-properties-unit-display','metadata-input-longtext']);
+		this.displayEl.addEventListener("click", () => {
+			this.enterEditMode();
+		});
+	}
+
+	private createEditContainer(el: HTMLElement) {
+		this.editContainer = el.createDiv();
+		this.editContainer.addClass('better-properties-unit-container');
+		this.editContainer.style.display = "none"; // Initially Hidden
+		this.createNumberComponent();
+		this.createUnitComponent();
+	}
+
+	private createNumberComponent() {
+		const numberEl = this.editContainer.createDiv({ cls: "better-properties-unit-number" });
+		this.numberComponent = new TextComponent(numberEl);
+		this.numberComponent.inputEl.type = "number";
+		
+		// Add event listener to adjust width on input
+		this.numberComponent.inputEl.addEventListener("input", () => {
+			this.adjustInputWidth();
+		});
+
+		// Handle blur to exit edit mode
+		this.numberComponent.inputEl.addEventListener("blur", () => {
+			setTimeout(() => {
+				if(document.activeElement !== this.unitComponent.selectEl) {
+					this.exitEditMode();
+				}
+			}, 100);
+		});
+
+		// Handle Enter key to exit edit mode
+		this.numberComponent.inputEl.addEventListener("keydown", (e) => {
+			if (e.key === "Enter") {
+				this.exitEditMode();
+			}
+		});
+
+		this.numberComponent.onChange(() => this.commit());
+	}
+
+	private createUnitComponent() {
+		const unitEl = this.editContainer.createDiv({ cls: "better-properties-unit-select" });
+
+		this.unitComponent = new DropdownComponent(unitEl);
+		Object.keys(this.units).forEach((unit) => {
+			this.unitComponent.addOption(unit, unit);
+		});
+
+		// Handle blur on dropdown to exit edit mode
+		this.unitComponent.selectEl.addEventListener("blur", () => {
+			// Use a small timeout to check if focus moved to the input
+			setTimeout(() => {
+				if (document.activeElement !== this.numberComponent.inputEl) {
+					this.exitEditMode();
+				}
+			}, 100);
+		});
+
+		this.unitComponent.onChange(() => this.commit());
+	}
+
+	enterEditMode(): void {
+		if (this.isEditing) return;
+		this.isEditing = true;
+		this.displayEl.style.display = "none";
+		this.editContainer.style.display = "";
+		this.numberComponent.inputEl.focus();
+	}
+
+	exitEditMode(): void {
+		if (!this.isEditing) return;
+		this.isEditing = false;
+		this.displayEl.style.display = "";
+		this.editContainer.style.display = "none";
+		this.updateDisplay();
+	}
+
+	updateDisplay(): void {
+		const parsed = this.parseValue(this.getValue());
+		if (parsed?.value === undefined || parsed?.value === null) {
+			this.displayEl.textContent = "";
+		} else {
+			const displayValue = parsed.value;
+			this.displayEl.textContent = `${displayValue}${this.units[parsed.unit] ?? this.units[0][0]}`;
+		}
 	}
 
 	adjustInputWidth(): void {
@@ -177,14 +247,12 @@ class UnitTypeComponent extends PropertyWidgetComponentNew<"unit", UnitValue> {
 
 	commit(): void {
 		const valueStr = this.numberComponent.getValue();
-		const settings = this.getSettings();
-		let num: number | undefined = valueStr === "" ? undefined : Number(valueStr);
-		if (num !== undefined && settings?.decimalPlaces !== undefined) {
-			const dp = settings.decimalPlaces;
-			const factor = 10 ** dp;
-			num = Math.round(num * factor) / factor;
-		}
+		const num = valueStr === "" ? undefined : Number(valueStr);
 		this.setValue({ value: num, unit: this.unitComponent.getValue() });
+		// Update display while editing (for real-time feedback)
+		if (this.isEditing) {
+			this.updateDisplay();
+		}
 	}
 
 	getValue(): UnitValue {
@@ -208,6 +276,10 @@ class UnitTypeComponent extends PropertyWidgetComponentNew<"unit", UnitValue> {
 			this.unitComponent.setValue(parsed?.unit ?? this.units[0]);
 		}
 		super.setValue(parsed);
+		// Update display if not in edit mode
+		if (!this.isEditing) {
+			this.updateDisplay();
+		}
 	}
 }
 
