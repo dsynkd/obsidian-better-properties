@@ -6,113 +6,60 @@ import { PropertyRenderContext } from "obsidian-typings";
 
 type UnitValue = { value: number | undefined; unit: string } | undefined;
 
-const DEFAULT_UNITS: string[] = [
+const DEFAULT_UNITS: Record<string, string> = {
 	// Metric length
-	"mm",
-	"cm",
-	"m",
-	"km",
+	"Millimeter": "mm",
+	"Centimeter": "cm",
+	"Meter": "m",
+	"Kilometer": "km",
 	// Imperial length
-	"in",
-	"ft",
-	"yd",
-	"mi",
+	"Inch": "in",
+	"Foot": "ft",
+	"Yard": "yd",
+	"Mile": "mi",
 	// Metric mass
-	"mg",
-	"g",
-	"kg",
-	"t",
+	"Milligram": "mg",
+	"Gram": "g",
+	"Kilogram": "kg",
+	"Metric Ton": "t",
 	// Imperial mass
-	"oz",
-	"lb",
+	"Ounce": "oz",
+	"Pound": "lb",
 	// Volume metric
-	"ml",
-	"l",
+	"Milliliter": "ml",
+	"Liter": "l",
 	// Volume imperial
-	"tsp",
-	"tbsp",
-	"fl oz",
-	"cup",
-	"pt",
-	"qt",
-	"gal",
+	"Teaspoon": "tsp",
+	"Tablespoon": "tbsp",
+	"Fluid Ounce": "fl oz",
+	"Cup": "cup",
+	"Pint": "pt",
+	"Quart": "qt",
+	"Gallon": "gal",
 	// Area
-	"mm²",
-	"cm²",
-	"m²",
-	"km²",
-	"in²",
-	"ft²",
-	"yd²",
-	"acre",
+	"Square Millimeter": "mm²",
+	"Square Centimeter": "cm²",
+	"Square Meter": "m²",
+	"Square Kilometer": "km²",
+	"Square Inch": "in²",
+	"Square Foot": "ft²",
+	"Square Yard": "yd²",
+	"Acre": "acre",
 	// Speed
-	"m/s",
-	"km/h",
-	"mph",
-	// Temperature (kept for unit selection only; numeric value is separate)
-	"°C",
-	"°F",
-	"K",
-	// Time
-	"ms",
-	"s",
-	"min",
-	"h",
-];
-
-const UNIT_DISPLAY_NAMES: Record<string, string> = {
-	// Metric length
-	"mm": "Millimeter",
-	"cm": "Centimeter", 
-	"m": "Meter",
-	"km": "Kilometer",
-	// Imperial length
-	"in": "Inch",
-	"ft": "Foot",
-	"yd": "Yard",
-	"mi": "Mile",
-	// Metric mass
-	"mg": "Milligram",
-	"g": "Gram",
-	"kg": "Kilogram",
-	"t": "Metric Ton",
-	// Imperial mass
-	"oz": "Ounce",
-	"lb": "Pound",
-	// Volume metric
-	"ml": "Milliliter",
-	"l": "Liter",
-	// Volume imperial
-	"tsp": "Teaspoon",
-	"tbsp": "Tablespoon",
-	"fl oz": "Fluid Ounce",
-	"cup": "Cup",
-	"pt": "Pint",
-	"qt": "Quart",
-	"gal": "Gallon",
-	// Area
-	"mm²": "Square Millimeter",
-	"cm²": "Square Centimeter",
-	"m²": "Square Meter",
-	"km²": "Square Kilometer",
-	"in²": "Square Inch",
-	"ft²": "Square Foot",
-	"yd²": "Square Yard",
-	"acre": "Acre",
-	// Speed
-	"m/s": "Meters per Second",
-	"km/h": "Kilometers per Hour",
-	"mph": "Miles per Hour",
+	"Meters per Second": "m/s",
+	"Kilometers per Hour": "km/h",
+	"Miles per Hour": "mph",
 	// Temperature
-	"°C": "Celsius",
-	"°F": "Fahrenheit",
-	"K": "Kelvin",
+	"Celsius": "°C",
+	"Fahrenheit": "°F",
+	"Kelvin": "K",
 	// Time
-	"ms": "Millisecond",
-	"s": "Second",
-	"min": "Minute",
-	"h": "Hour",
+	"Millisecond": "ms",
+	"Second": "s",
+	"Minute": "min",
+	"Hour": "h",
 };
+
 
 export const renderWidget: CustomPropertyType["renderWidget"] = ({
 	plugin,
@@ -155,7 +102,7 @@ class UnitTypeComponent extends PropertyWidgetComponentNew<"unit", UnitValue> {
 		const settings = this.getSettings();
 		this.units = settings?.allowedUnits?.length
 			? settings.allowedUnits
-			: DEFAULT_UNITS;
+			: Object.keys(DEFAULT_UNITS);
 
 		const container = el.createDiv({ 
 			cls: "better-properties-unit-container"
@@ -181,8 +128,8 @@ class UnitTypeComponent extends PropertyWidgetComponentNew<"unit", UnitValue> {
 
 		this.unitComponent = new DropdownComponent(unitEl);
 		this.units.forEach((u) => {
-			const displayName = UNIT_DISPLAY_NAMES[u] || u;
-			this.unitComponent.addOption(u, displayName);
+			// const abbreviation = DEFAULT_UNITS[u] || u;
+			this.unitComponent.addOption(u, u);
 		});
 
 		const parsed = this.parseValue(initial);
