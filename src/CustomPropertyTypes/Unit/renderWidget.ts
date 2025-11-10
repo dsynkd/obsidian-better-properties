@@ -6,6 +6,8 @@ import { PropertyRenderContext } from "obsidian-typings";
 
 type UnitValue = { value: number | undefined; unit: string } | undefined;
 
+const DEFAULT_UNIT = "Inch";
+
 const DEFAULT_UNITS: Record<string, string> = {
 	// Metric length
 	"Millimeter": "mm",
@@ -73,7 +75,7 @@ export const renderWidget: CustomPropertyType["renderWidget"] = ({
 class UnitTypeComponent extends PropertyWidgetComponentNew<"unit", UnitValue> {
 	type = "unit" as const;
 	parseValue = (v: unknown): UnitValue => {
-		if (!v) return { value: undefined, unit: this.units[0] };
+		if (!v) return { value: undefined, unit: DEFAULT_UNIT };
 		if (typeof v === "object" && v !== null) {
 			const maybe = v as { value?: unknown; unit?: unknown };
 			return {
@@ -81,10 +83,10 @@ class UnitTypeComponent extends PropertyWidgetComponentNew<"unit", UnitValue> {
 					maybe.value === undefined || maybe.value === null
 						? undefined
 						: Number(maybe.value),
-				unit: typeof maybe.unit === "string" ? maybe.unit : this.units[0],
+				unit: typeof maybe.unit === "string" ? maybe.unit : DEFAULT_UNIT,
 			};
 		}
-		return { value: Number(v), unit: this.units[0] };
+		return { value: Number(v), unit: DEFAULT_UNIT };
 	};
 
 	numberComponent!: TextComponent;
@@ -113,7 +115,7 @@ class UnitTypeComponent extends PropertyWidgetComponentNew<"unit", UnitValue> {
 		this.numberComponent.setValue(
 			parsed?.value === undefined ? "" : String(parsed?.value ?? "")
 		);
-		this.unitComponent.setValue(parsed?.unit ?? this.units[0]);
+		this.unitComponent.setValue(parsed?.unit ?? DEFAULT_UNIT);
 
 		// Adjust width for initial value
 		this.adjustInputWidth();
@@ -211,11 +213,11 @@ class UnitTypeComponent extends PropertyWidgetComponentNew<"unit", UnitValue> {
 
 	updateDisplay(): void {
 		const parsed = this.parseValue(this.getValue());
-		if (parsed?.value === undefined || parsed?.value === null) {
+		if (parsed?.value === undefined || parsed?.value === null || parsed?.unit === undefined || parsed?.unit === null) {
 			this.displayEl.textContent = "";
 		} else {
 			const displayValue = parsed.value;
-			this.displayEl.textContent = `${displayValue}${this.units[parsed.unit] ?? this.units[0][0]}`;
+			this.displayEl.textContent = `${displayValue}${this.units[parsed.unit] ?? DEFAULT_UNIT}`;
 		}
 	}
 
@@ -273,7 +275,7 @@ class UnitTypeComponent extends PropertyWidgetComponentNew<"unit", UnitValue> {
 			this.adjustInputWidth();
 		}
 		if (current?.unit !== parsed?.unit) {
-			this.unitComponent.setValue(parsed?.unit ?? this.units[0]);
+			this.unitComponent.setValue(parsed?.unit ?? DEFAULT_UNIT);
 		}
 		super.setValue(parsed);
 		// Update display if not in edit mode
