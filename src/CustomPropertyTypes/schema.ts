@@ -14,7 +14,7 @@ import { sliderSettingsSchema } from "./Slider";
 import { timeSettingsSchema } from "./Time";
 import { multiSelectSettingsSchema } from "./MultiSelect";
 import { numericSettingsSchema } from "./Numeric";
-import { unitSettingsSchema } from "./Unit";
+import { measurementSettingsSchema } from "./Measurement";
 import { arraySettingsSchema } from "./Array";
 import { relationSettingsSchema } from "./Relation";
 
@@ -52,7 +52,7 @@ export const propertySettingsSchema = v.object({
 	slider: sliderSettingsSchema,
 	time: timeSettingsSchema,
 	numeric: numericSettingsSchema,
-	unit: unitSettingsSchema,
+	measurement: measurementSettingsSchema,
 }) satisfies SettingsBase;
 
 export const getDefaultPropertySettings =
