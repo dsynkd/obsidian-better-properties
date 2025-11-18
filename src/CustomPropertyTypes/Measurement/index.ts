@@ -5,11 +5,11 @@ import { renderSettings } from "./renderSettings.ts";
 import { registerListeners } from "./registerListeners.ts";
 import * as v from "valibot";
 
-export const typeKey = "unit" satisfies CustomTypeKey;
+export const typeKey = "measurement" satisfies CustomTypeKey;
 
-export const unitPropertyType: CustomPropertyType = {
+export const measurementPropertyType: CustomPropertyType = {
 	type: typeKey,
-	name: () => text("customPropertyTypes.unit.name"),
+	name: () => text("customPropertyTypes.measurement.name"),
 	icon: "lucide-ruler",
 	validate: (v) =>
 		!v ||
@@ -19,6 +19,6 @@ export const unitPropertyType: CustomPropertyType = {
 	renderWidget,
 };
 
-export const unitSettingsSchema = v.optional(
+export const measurementSettingsSchema = v.optional(
 	v.object({})
 ) satisfies PropertyTypeSchema;

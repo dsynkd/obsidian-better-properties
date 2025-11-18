@@ -34,8 +34,8 @@
 		"second": "Second"
 	},
 	"customPropertyTypes": {
-    "unit": {
-      "name": "Unit",
+    "measurement": {
+      "name": "Measurement",
       "settings": {
         "decimalPlaces": {
           "title": "Decimal places",

@@ -4,7 +4,7 @@ import { PropertyWidgetComponentNew } from "../utils";
 import BetterProperties from "~/main";
 import { PropertyRenderContext } from "obsidian-typings";
 
-type UnitValue = { value: number | undefined; unit: string } | undefined;
+type MeasurementValue = { value: number | undefined; unit: string } | undefined;
 
 const DEFAULT_UNIT = "Inch";
 
@@ -69,12 +69,12 @@ export const renderWidget: CustomPropertyType["renderWidget"] = ({
 	value,
 	ctx,
 }) => {
-	return new UnitTypeComponent(plugin, el, value, ctx);
+	return new MeasurementTypeComponent(plugin, el, value, ctx);
 };
 
-class UnitTypeComponent extends PropertyWidgetComponentNew<"unit", UnitValue> {
-	type = "unit" as const;
-	parseValue = (v: unknown): UnitValue => {
+class MeasurementTypeComponent extends PropertyWidgetComponentNew<"measurement", MeasurementValue> {
+	type = "measurement" as const;
+	parseValue = (v: unknown): MeasurementValue => {
 		if (!v) return { value: undefined, unit: DEFAULT_UNIT };
 		if (typeof v === "object" && v !== null) {
 			const maybe = v as { value?: unknown; unit?: unknown };
@@ -131,7 +131,7 @@ class UnitTypeComponent extends PropertyWidgetComponentNew<"unit", UnitValue> {
 
 	private createDisplayView(el: HTMLElement) {
 		this.displayEl = el.createDiv();
-		this.displayEl.addClasses(['better-properties-unit-display','metadata-input-longtext']);
+		this.displayEl.addClasses(['better-properties-measurement-display','metadata-input-longtext']);
 		this.displayEl.addEventListener("click", () => {
 			this.enterEditMode();
 		});
@@ -139,14 +139,14 @@ class UnitTypeComponent extends PropertyWidgetComponentNew<"unit", UnitValue> {
 
 	private createEditContainer(el: HTMLElement) {
 		this.editContainer = el.createDiv();
-		this.editContainer.addClass('better-properties-unit-container');
+		this.editContainer.addClass('better-properties-measurement-container');
 		this.editContainer.style.display = "none"; // Initially Hidden
 		this.createNumberComponent();
 		this.createUnitComponent();
 	}
 
 	private createNumberComponent() {
-		const numberEl = this.editContainer.createDiv({ cls: "better-properties-unit-number" });
+		const numberEl = this.editContainer.createDiv({ cls: "better-properties-measurement-number" });
 		this.numberComponent = new TextComponent(numberEl);
 		this.numberComponent.inputEl.type = "number";
 		
@@ -175,7 +175,7 @@ class UnitTypeComponent extends PropertyWidgetComponentNew<"unit", UnitValue> {
 	}
 
 	private createUnitComponent() {
-		const unitEl = this.editContainer.createDiv({ cls: "better-properties-unit-select" });
+		const unitEl = this.editContainer.createDiv({ cls: "better-properties-measurement-select" });
 
 		this.unitComponent = new DropdownComponent(unitEl);
 		Object.keys(this.units).forEach((unit) => {
@@ -257,7 +257,7 @@ class UnitTypeComponent extends PropertyWidgetComponentNew<"unit", UnitValue> {
 		}
 	}
 
-	getValue(): UnitValue {
+	getValue(): MeasurementValue {
 		const valueStr = this.numberComponent.getValue();
 		return {
 			value: valueStr === "" ? undefined : Number(valueStr),
