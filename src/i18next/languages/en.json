@@ -38,9 +38,12 @@
     "measurement": {
       "name": "Measurement",
       "settings": {
-        "decimalPlaces": {
-          "title": "Decimal places",
-          "desc": "Round numeric input to this many decimal places."
+        "units": {
+          "title": "Units",
+          "desc": "Configure the available units for this measurement property.",
+          "namePlaceholder": "Unit name",
+          "shorthandPlaceholder": "Unit shorthand",
+          "addButton": "Add unit"
         }
       }
     },
