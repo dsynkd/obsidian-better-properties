@@ -134,7 +134,7 @@ class MeasurementTypeComponent extends PropertyWidgetComponentNew<"measurement",
 
 	private createDisplayView(el: HTMLElement) {
 		this.displayEl = el.createDiv();
-		this.displayEl.addClasses(['better-properties-measurement-display','metadata-input-longtext']);
+		this.displayEl.addClass('metadata-input-longtext');
 		this.displayEl.addEventListener("click", () => {
 			this.enterEditMode();
 		});

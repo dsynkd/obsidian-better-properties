@@ -299,6 +299,16 @@ body {
 			/* width: 100% !important; */
 		}
 	}
+
+	&[data-property-type="better-properties:code"] {
+		& > .metadata-input-longtext input {
+			background-color: transparent;
+			padding: var(--input-padding);
+			&:hover {
+				background-color: transparent;
+			}
+		}
+	}
 }
 
 .metadata-property:has(
@@ -796,8 +806,4 @@ div.better-properties-mod-hidden {
 		max-width: 15ch;
 		background-color: transparent;
 	}
-}
-
-.better-properties-measurement-display {
-	cursor: text;
 }

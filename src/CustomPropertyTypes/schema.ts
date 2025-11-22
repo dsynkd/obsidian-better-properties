@@ -14,9 +14,10 @@ import { sliderSettingsSchema } from "./Slider";
 import { timeSettingsSchema } from "./Time";
 import { multiSelectSettingsSchema } from "./MultiSelect";
 import { numericSettingsSchema } from "./Numeric";
-import { measurementSettingsSchema } from "./Measurement";
 import { arraySettingsSchema } from "./Array";
 import { relationSettingsSchema } from "./Relation";
+import { measurementSettingsSchema } from "./Measurement";
+import { codeSettingsSchema } from "./Code";
 
 type SettingsBase = v.ObjectSchema<
 	Record<string, PropertyTypeSchema>,
@@ -53,6 +54,7 @@ export const propertySettingsSchema = v.object({
 	time: timeSettingsSchema,
 	numeric: numericSettingsSchema,
 	measurement: measurementSettingsSchema,
+	code: codeSettingsSchema
 }) satisfies SettingsBase;
 
 export const getDefaultPropertySettings =
