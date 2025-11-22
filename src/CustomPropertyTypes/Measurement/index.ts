@@ -20,5 +20,14 @@ export const measurementPropertyType: CustomPropertyType = {
 };
 
 export const measurementSettingsSchema = v.optional(
-	v.object({})
+	v.object({
+		units: v.optional(
+			v.array(
+				v.object({
+					name: v.string(),
+					shorthand: v.string(),
+				})
+			)
+		),
+	})
 ) satisfies PropertyTypeSchema;

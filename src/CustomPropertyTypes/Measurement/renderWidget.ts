@@ -8,7 +8,8 @@ type MeasurementValue = { value: number | undefined; unit: string } | undefined;
 
 const DEFAULT_UNIT = "Inch";
 
-const DEFAULT_UNITS: Record<string, string> = {
+// Default units that will be used if no units are configured in settings
+export const DEFAULT_UNITS: Record<string, string> = {
 	// Metric length
 	"Millimeter": "mm",
 	"Centimeter": "cm",
@@ -27,8 +28,6 @@ const DEFAULT_UNITS: Record<string, string> = {
 	// Imperial mass
 	"Ounce": "oz",
 	"Pound": "lb",
-	// Volume metric
-	"Milliliter": "ml",
 	"Liter": "l",
 	// Volume imperial
 	"Teaspoon": "tsp",
@@ -62,7 +61,6 @@ const DEFAULT_UNITS: Record<string, string> = {
 	"Hour": "h",
 };
 
-
 export const renderWidget: CustomPropertyType["renderWidget"] = ({
 	plugin,
 	el,
@@ -74,19 +72,23 @@ export const renderWidget: CustomPropertyType["renderWidget"] = ({
 
 class MeasurementTypeComponent extends PropertyWidgetComponentNew<"measurement", MeasurementValue> {
 	type = "measurement" as const;
+
 	parseValue = (v: unknown): MeasurementValue => {
-		if (!v) return { value: undefined, unit: DEFAULT_UNIT };
-		if (typeof v === "object" && v !== null) {
-			const maybe = v as { value?: unknown; unit?: unknown };
-			return {
-				value:
-					maybe.value === undefined || maybe.value === null
-						? undefined
-						: Number(maybe.value),
-				unit: typeof maybe.unit === "string" ? maybe.unit : DEFAULT_UNIT,
-			};
+		if (!v || typeof v !== "object") {
+			console.warn("[MeasurementTypeComponent.parseValue] Could not parse value")
+			return { value: undefined, unit: "" };
 		}
-		return { value: Number(v), unit: DEFAULT_UNIT };
+
+		const maybe = v as { value?: unknown; unit?: unknown };
+		if (maybe.value == null || typeof maybe.unit !== "string" || !maybe.unit) {
+			console.warn(`[MeasurementTypeComponent.parseValue] Could not parse value (value: ${maybe.value}, unit: ${maybe.unit})`)
+			return { value: undefined, unit: "" };
+		}
+
+		return {
+			value: Number(maybe.value),
+			unit: maybe.unit
+		};
 	};
 
 	numberComponent!: TextComponent;
@@ -104,7 +106,8 @@ class MeasurementTypeComponent extends PropertyWidgetComponentNew<"measurement",
 	) {
 		super(plugin, el, initial, ctx);
 
-		this.units = DEFAULT_UNITS;
+		const settings = this.getSettings();
+		this.units = this.getUnitsFromSettings(settings);
 
 		// Create display view
 		this.createDisplayView(el)
@@ -195,6 +198,16 @@ class MeasurementTypeComponent extends PropertyWidgetComponentNew<"measurement",
 		this.unitComponent.onChange(() => this.commit());
 	}
 
+	private getUnitsFromSettings(settings?: { units?: Array<{ name: string; shorthand: string }> }): Record<string, string> {
+		if (!settings?.units || settings.units.length === 0) {
+			return DEFAULT_UNITS;
+		}
+		return settings.units.reduce((acc, unit) => {
+			acc[unit.name] = unit.shorthand;
+			return acc;
+		}, {} as Record<string, string>);
+	}
+
 	enterEditMode(): void {
 		if (this.isEditing) return;
 		this.isEditing = true;
@@ -213,12 +226,16 @@ class MeasurementTypeComponent extends PropertyWidgetComponentNew<"measurement",
 
 	updateDisplay(): void {
 		const parsed = this.parseValue(this.getValue());
-		if (parsed?.value === undefined || parsed?.value === null || parsed?.unit === undefined || parsed?.unit === null) {
+		const settings = this.getSettings();
+		
+		if (parsed?.value == null || parsed?.unit == null) {
 			this.displayEl.textContent = "";
-		} else {
-			const displayValue = parsed.value;
-			this.displayEl.textContent = `${displayValue}${this.units[parsed.unit] ?? DEFAULT_UNIT}`;
+			return;
 		}
+		
+		const displayValue = parsed.value;
+		const shorthand = this.units[parsed.unit] ?? (settings?.units?.find(u => u.name === parsed.unit)?.shorthand ?? "");
+		this.displayEl.textContent = `${displayValue}${shorthand}`;
 	}
 
 	adjustInputWidth(): void {
@@ -242,25 +259,21 @@ class MeasurementTypeComponent extends PropertyWidgetComponentNew<"measurement",
 		// Set width with some padding, respecting min/max constraints
 		const minWidth = parseFloat(getComputedStyle(input).minWidth) || 0;
 		const maxWidth = parseFloat(getComputedStyle(input).maxWidth) || Infinity;
-		const newWidth = Math.max(minWidth, Math.min(maxWidth, width + 18)); // 8px padding
+		const newWidth = Math.max(minWidth, Math.min(maxWidth, width + 18)); // 18px padding
 		
 		input.style.width = `${newWidth}px`;
 	}
 
 	commit(): void {
-		const valueStr = this.numberComponent.getValue();
-		const num = valueStr === "" ? undefined : Number(valueStr);
-		this.setValue({ value: num, unit: this.unitComponent.getValue() });
-		// Update display while editing (for real-time feedback)
+		this.setValue({ value: Number(this.numberComponent.getValue()), unit: this.unitComponent.getValue() });
 		if (this.isEditing) {
 			this.updateDisplay();
 		}
 	}
 
 	getValue(): MeasurementValue {
-		const valueStr = this.numberComponent.getValue();
 		return {
-			value: valueStr === "" ? undefined : Number(valueStr),
+			value: Number(this.numberComponent.getValue()),
 			unit: this.unitComponent.getValue(),
 		};
 	}
@@ -268,16 +281,21 @@ class MeasurementTypeComponent extends PropertyWidgetComponentNew<"measurement",
 	setValue(v: unknown): void {
 		const parsed = this.parseValue(v);
 		const current = this.getValue();
-		if (current?.value !== parsed?.value) {
-			this.numberComponent.setValue(
-				parsed?.value === undefined ? "" : String(parsed?.value)
-			);
+		if(parsed == null || current == null) {
+			console.warn("[MeasurementTypeComponent.setValue] parsed or current value is null");
+			return;
+		}
+		
+		if (current.value !== parsed.value) {
+			this.numberComponent.setValue(`${parsed.value}`);	
 			this.adjustInputWidth();
 		}
-		if (current?.unit !== parsed?.unit) {
-			this.unitComponent.setValue(parsed?.unit ?? DEFAULT_UNIT);
+		if (current.unit !== parsed.unit) {
+			this.unitComponent.setValue(parsed.unit);
 		}
+
 		super.setValue(parsed);
+
 		// Update display if not in edit mode
 		if (!this.isEditing) {
 			this.updateDisplay();
