@@ -448,6 +448,7 @@ div.setting-item.better-properties-list-setting {
 		border-radius: var(--radius-s);
 		padding: var(--size-2-1);
 		background-color: var(--background-primary);
+		color: var(--text-normal);
 	}
 }
 
