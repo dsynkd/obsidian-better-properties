@@ -17,8 +17,7 @@ class CodeTypeComponent extends PropertyWidgetComponentNew<"code", string> {
 	type = "code" as const;
 
 	parseValue = (v: unknown): string => {
-		if (!v || typeof v !== "string") {
-			console.warn("[CodeTypeComponent.parseValue] Could not parse value")
+		if (v == null || typeof v !== "string") {
 			return ''
 		}
         return v
