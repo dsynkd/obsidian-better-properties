@@ -1,14 +1,66 @@
-import { Setting } from "obsidian";
+import { DropdownComponent, Setting } from "obsidian";
 import { CustomPropertyType } from "../types";
 import { text } from "~/i18next";
 import { typeKey } from "./index";
 import { getPropertyTypeSettings, setPropertyTypeSettings } from "../utils";
 import { ListSetting } from "~/classes/ListSetting";
 import { Icon } from "~/lib/types/icons";
-import { DEFAULT_UNITS } from "./renderWidget";
 
 type MeasurementSettings = NonNullable<ReturnType<typeof getPropertyTypeSettings<typeof typeKey>>>;
 type Unit = NonNullable<MeasurementSettings["units"]>[number];
+
+// Default units that will be used if no units are configured in settings
+const DEFAULT_UNITS: Record<string, string> = {
+	// Metric length
+	"Millimeter": "mm",
+	"Centimeter": "cm",
+	"Meter": "m",
+	"Kilometer": "km",
+	// Imperial length
+	"Inch": "in",
+	"Foot": "ft",
+	"Yard": "yd",
+	"Mile": "mi",
+	// Metric mass
+	"Milligram": "mg",
+	"Gram": "g",
+	"Kilogram": "kg",
+	"Metric Ton": "t",
+	// Imperial mass
+	"Ounce": "oz",
+	"Pound": "lb",
+	"Liter": "l",
+	// Volume imperial
+	"Teaspoon": "tsp",
+	"Tablespoon": "tbsp",
+	"Fluid Ounce": "fl oz",
+	"Cup": "cup",
+	"Pint": "pt",
+	"Quart": "qt",
+	"Gallon": "gal",
+	// Area
+	"Square Millimeter": "mm²",
+	"Square Centimeter": "cm²",
+	"Square Meter": "m²",
+	"Square Kilometer": "km²",
+	"Square Inch": "in²",
+	"Square Foot": "ft²",
+	"Square Yard": "yd²",
+	"Acre": "acre",
+	// Speed
+	"Meters per Second": "m/s",
+	"Kilometers per Hour": "km/h",
+	"Miles per Hour": "mph",
+	// Temperature
+	"Celsius": "°C",
+	"Fahrenheit": "°F",
+	"Kelvin": "K",
+	// Time
+	"Millisecond": "ms",
+	"Second": "s",
+	"Minute": "min",
+	"Hour": "h",
+};
 
 // Convert DEFAULT_UNITS Record to array format for settings
 const getDefaultUnitsArray = (): Unit[] => {
@@ -51,17 +103,37 @@ export const renderSettings: CustomPropertyType["renderSettings"] = ({
 	});
 
 	// Default Unit setting
+	let defaultUnitDropdown: DropdownComponent | null = null;
+
+	const updateDefaultUnitDropdown = () => {
+		if (!defaultUnitDropdown) return;
+		defaultUnitDropdown.selectEl.innerHTML = "";
+		defaultUnitDropdown.addOption("Unknown", text("customPropertyTypes.measurement.settings.defaultUnit.none"));
+		
+		// Add existing units
+		let isDefaultUnitValid = false;
+		const units = settings.units;
+		if (units) {
+			for (const unit of units) {
+				defaultUnitDropdown.addOption(unit.name, unit.name);
+				if(unit.name === settings.defaultUnit) {
+					isDefaultUnitValid = true;
+				}
+			}
+		}
+		
+		if(isDefaultUnitValid) {
+			defaultUnitDropdown.setValue(settings.defaultUnit ?? "Unknown");
+		} else { // Reset Default Unit value, possibly because it was deleted from list
+			settings.defaultUnit = undefined;
+		}
+	};
+
 	new Setting(parentEl)
 		.setName(text("customPropertyTypes.measurement.settings.defaultUnit.title"))
 		.addDropdown((dropdown) => {
-			dropdown.addOption("Unknown", text("customPropertyTypes.measurement.settings.defaultUnit.none"));
-			
-			const units = settings.units || getDefaultUnitsArray();
-			units.forEach((unit) => {
-				dropdown.addOption(unit.name, unit.name);
-			});
-			
-			dropdown.setValue(settings.defaultUnit || "Unknown");
+			defaultUnitDropdown = dropdown;
+			updateDefaultUnitDropdown();
 			
 			dropdown.onChange((value) => {
 				settings.defaultUnit = value === "Unknown" ? undefined : value;
@@ -72,7 +144,10 @@ export const renderSettings: CustomPropertyType["renderSettings"] = ({
 		.setName(text("customPropertyTypes.measurement.settings.units.title"))
 		.setDesc(text("customPropertyTypes.measurement.settings.units.desc"))
 		.setValue(settings.units)
-		.onChange((v) => (settings.units = [...v]))
+		.onChange((v) => {
+			settings.units = [...v];
+			updateDefaultUnitDropdown();
+		})
 		.onCreateItem((unit, item) => {
 			if (unit === undefined || item === undefined) {
 				throw new Error("onCreateItem called with undefined");
@@ -86,8 +161,16 @@ export const renderSettings: CustomPropertyType["renderSettings"] = ({
 						.setValue(name)
 						.onChange((v) => {
 							const matched = list.value[item.index];
+							console.log(`matched: ${matched}`);
 							if (matched === undefined) return;
+							const oldName = matched.name;
+							console.log(`oldName: ${oldName}`);
 							matched.name = v;
+							// If the default unit was set to the old name, update it to the new name
+							if (settings.defaultUnit === oldName) {
+								settings.defaultUnit = v;
+							}
+							updateDefaultUnitDropdown();
 						})
 						.then((inp) => item.onFocus(() => inp.inputEl.focus()))
 				)
