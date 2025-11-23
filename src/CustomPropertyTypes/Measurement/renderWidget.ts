@@ -5,8 +5,9 @@ import BetterProperties from "~/main";
 import { PropertyRenderContext } from "obsidian-typings";
 
 type MeasurementValue = { value: number | null; unit: string } | null;
+type MeasurementSettings = { units?: Array<{ name: string; shorthand: string }>, defaultUnit?: string };
 
-const DEFAULT_UNIT = "Unknown";
+const UNKNOWN_UNIT = "Unknown";
 
 // Default units that will be used if no units are configured in settings
 export const DEFAULT_UNITS: Record<string, string> = {
@@ -85,7 +86,7 @@ class MeasurementTypeComponent extends PropertyWidgetComponentNew<"measurement",
 
 		return {
 			value: maybe.value != null && maybe.value !== '' ? Number(maybe.value) : null,
-			unit: maybe.unit != null && typeof maybe.unit === "string" ? maybe.unit : DEFAULT_UNIT
+			unit: maybe.unit != null && typeof maybe.unit === "string" ? maybe.unit : this.defaultUnit
 		};
 	};
 
@@ -94,6 +95,7 @@ class MeasurementTypeComponent extends PropertyWidgetComponentNew<"measurement",
 	displayEl!: HTMLDivElement;
 	editContainer!: HTMLDivElement;
 	units: Record<string, string> = {};
+	defaultUnit!: string;
 	isEditing = false;
 
 	constructor(
@@ -104,7 +106,9 @@ class MeasurementTypeComponent extends PropertyWidgetComponentNew<"measurement",
 	) {
 		super(plugin, container, initial, ctx);
 
-		this.units = this.loadUnits();
+		const settings = this.getSettings();
+		this.units = this.loadUnits(settings);
+		this.defaultUnit = settings?.defaultUnit || UNKNOWN_UNIT;
 		this.createDisplayView(container)
 		this.createEditContainer(container);
 		this.initializeValues(initial);
@@ -190,17 +194,13 @@ class MeasurementTypeComponent extends PropertyWidgetComponentNew<"measurement",
 
 	private initializeValues(initial: unknown) {
 		const parsed = this.parseValue(initial);
-		if(parsed == null) return;
-		if (parsed.value != null) {
+		if (parsed != null && parsed.value != null) {
 			this.numberComponent.setValue(`${parsed.value}`);
 		}
-		if (parsed.unit != null) {
-			this.unitComponent.setValue(parsed.unit);
-		}
+		this.unitComponent.setValue(parsed?.unit ?? this.defaultUnit);
 	}
 
-	private loadUnits(): Record<string, string> {
-		const settings = this.getSettings();
+	private loadUnits(settings: MeasurementSettings): Record<string, string> {
 		if (!settings?.units || settings.units.length === 0) {
 			return DEFAULT_UNITS;
 		}
@@ -285,8 +285,8 @@ class MeasurementTypeComponent extends PropertyWidgetComponentNew<"measurement",
 			return;
 		}
 
-		// Reset proerty value when input values are empty
-		if(number === '' && (unit === '' || unit === null || unit === undefined || unit === DEFAULT_UNIT)) {
+		// Reset property value when input values are empty
+		if(number === '' && (unit === '' || unit === null || unit === undefined || unit === this.defaultUnit)) {
 			this.resetValue();
 			return;
 		}
@@ -298,7 +298,7 @@ class MeasurementTypeComponent extends PropertyWidgetComponentNew<"measurement",
 
 	private resetValue() {
 		this.numberComponent.setValue('');
-		this.unitComponent.setValue(DEFAULT_UNIT);
+		this.unitComponent.setValue(this.defaultUnit);
 		// Explicitly call with `null` to reset value
 		super.setValue(null);
 	}

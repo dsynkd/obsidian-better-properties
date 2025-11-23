@@ -37,6 +37,10 @@
     "measurement": {
       "name": "Measurement",
       "settings": {
+        "defaultUnit": {
+          "title": "Default Unit",
+          "none": "None"
+        },
         "units": {
           "title": "Units",
           "desc": "Configure the available units for this measurement property.",
