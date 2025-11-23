@@ -9,59 +9,6 @@ type MeasurementSettings = { units?: Array<{ name: string; shorthand: string }>,
 
 const UNKNOWN_UNIT = "Unknown";
 
-// Default units that will be used if no units are configured in settings
-export const DEFAULT_UNITS: Record<string, string> = {
-	// Metric length
-	"Millimeter": "mm",
-	"Centimeter": "cm",
-	"Meter": "m",
-	"Kilometer": "km",
-	// Imperial length
-	"Inch": "in",
-	"Foot": "ft",
-	"Yard": "yd",
-	"Mile": "mi",
-	// Metric mass
-	"Milligram": "mg",
-	"Gram": "g",
-	"Kilogram": "kg",
-	"Metric Ton": "t",
-	// Imperial mass
-	"Ounce": "oz",
-	"Pound": "lb",
-	"Liter": "l",
-	// Volume imperial
-	"Teaspoon": "tsp",
-	"Tablespoon": "tbsp",
-	"Fluid Ounce": "fl oz",
-	"Cup": "cup",
-	"Pint": "pt",
-	"Quart": "qt",
-	"Gallon": "gal",
-	// Area
-	"Square Millimeter": "mm²",
-	"Square Centimeter": "cm²",
-	"Square Meter": "m²",
-	"Square Kilometer": "km²",
-	"Square Inch": "in²",
-	"Square Foot": "ft²",
-	"Square Yard": "yd²",
-	"Acre": "acre",
-	// Speed
-	"Meters per Second": "m/s",
-	"Kilometers per Hour": "km/h",
-	"Miles per Hour": "mph",
-	// Temperature
-	"Celsius": "°C",
-	"Fahrenheit": "°F",
-	"Kelvin": "K",
-	// Time
-	"Millisecond": "ms",
-	"Second": "s",
-	"Minute": "min",
-	"Hour": "h",
-};
-
 export const renderWidget: CustomPropertyType["renderWidget"] = ({
 	plugin,
 	el,
@@ -202,7 +149,7 @@ class MeasurementTypeComponent extends PropertyWidgetComponentNew<"measurement",
 
 	private loadUnits(settings: MeasurementSettings): Record<string, string> {
 		if (!settings?.units || settings.units.length === 0) {
-			return DEFAULT_UNITS;
+			return {};
 		}
 		return settings.units.reduce((acc, unit) => {
 			acc[unit.name] = unit.shorthand;
