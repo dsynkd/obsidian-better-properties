@@ -172,7 +172,7 @@ class MeasurementTypeComponent extends PropertyWidgetComponentNew<"measurement",
 		placeholder.disabled = true;
 		placeholder.selected = true;
 		placeholder.hidden = true;
-		placeholder.innerText = "Select Unit";
+		placeholder.innerText = "Unit";
 		this.unitComponent.selectEl.prepend(placeholder)
 
 		// Handle blur on dropdown to exit edit mode
