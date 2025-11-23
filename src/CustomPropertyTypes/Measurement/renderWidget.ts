@@ -4,7 +4,7 @@ import { PropertyWidgetComponentNew } from "../utils";
 import BetterProperties from "~/main";
 import { PropertyRenderContext } from "obsidian-typings";
 
-type MeasurementValue = { value: number | undefined; unit: string } | undefined;
+type MeasurementValue = { value: number | null; unit: string } | null;
 
 const DEFAULT_UNIT = "Unknown";
 
@@ -74,18 +74,18 @@ class MeasurementTypeComponent extends PropertyWidgetComponentNew<"measurement",
 	type = "measurement" as const;
 
 	parseValue = (v: unknown): MeasurementValue => {
-		if (!v || typeof v !== "object") {
-			return { value: undefined, unit: DEFAULT_UNIT };
+		if (v == null || typeof v !== "object") {
+			return null;
 		}
 
 		const maybe = v as { value?: unknown; unit?: unknown };
-		if (maybe.value == null || maybe.value == "" || typeof maybe.unit !== "string") {
-			return { value: undefined, unit: DEFAULT_UNIT };
+		if (maybe.value == null && maybe.unit == null) {
+			return null;
 		}
 
 		return {
-			value: Number(maybe.value),
-			unit: maybe.unit ?? DEFAULT_UNIT
+			value: maybe.value != null && maybe.value !== '' ? Number(maybe.value) : null,
+			unit: maybe.unit != null && typeof maybe.unit === "string" ? maybe.unit : DEFAULT_UNIT
 		};
 	};
 
@@ -98,36 +98,19 @@ class MeasurementTypeComponent extends PropertyWidgetComponentNew<"measurement",
 
 	constructor(
 		plugin: BetterProperties,
-		el: HTMLElement,
+		container: HTMLElement,
 		initial: unknown,
 		ctx: PropertyRenderContext
 	) {
-		super(plugin, el, initial, ctx);
+		super(plugin, container, initial, ctx);
 
-		const settings = this.getSettings();
-		this.units = this.getUnitsFromSettings(settings);
-
-		// Create display view
-		this.createDisplayView(el)
-		this.createEditContainer(el);
-
-		// Set initial values
-		const parsed = this.parseValue(initial);
-		this.numberComponent.setValue(
-			parsed?.value === undefined ? "" : String(parsed?.value ?? "")
-		);
-		this.unitComponent.setValue(parsed?.unit ?? DEFAULT_UNIT);
-
-		// Adjust width for initial value
+		this.units = this.loadUnits();
+		this.createDisplayView(container)
+		this.createEditContainer(container);
+		this.initializeValues(initial);
 		this.adjustInputWidth();
-
-		// Update display with initial value
 		this.updateDisplay();
-
-		this.onFocus = () => {
-			this.enterEditMode();
-			this.numberComponent.inputEl.focus();
-		};
+		this.onFocus = () => { this.enterEditMode() };
 	}
 
 	private createDisplayView(el: HTMLElement) {
@@ -205,7 +188,19 @@ class MeasurementTypeComponent extends PropertyWidgetComponentNew<"measurement",
 		this.unitComponent.onChange(() => this.commit());
 	}
 
-	private getUnitsFromSettings(settings?: { units?: Array<{ name: string; shorthand: string }> }): Record<string, string> {
+	private initializeValues(initial: unknown) {
+		const parsed = this.parseValue(initial);
+		if(parsed == null) return;
+		if (parsed.value != null) {
+			this.numberComponent.setValue(`${parsed.value}`);
+		}
+		if (parsed.unit != null) {
+			this.unitComponent.setValue(parsed.unit);
+		}
+	}
+
+	private loadUnits(): Record<string, string> {
+		const settings = this.getSettings();
 		if (!settings?.units || settings.units.length === 0) {
 			return DEFAULT_UNITS;
 		}
@@ -215,7 +210,7 @@ class MeasurementTypeComponent extends PropertyWidgetComponentNew<"measurement",
 		}, {} as Record<string, string>);
 	}
 
-	enterEditMode(): void {
+	private enterEditMode(): void {
 		if (this.isEditing) return;
 		this.isEditing = true;
 		this.displayEl.style.display = "none";
@@ -223,19 +218,30 @@ class MeasurementTypeComponent extends PropertyWidgetComponentNew<"measurement",
 		this.numberComponent.inputEl.focus();
 	}
 
-	exitEditMode(): void {
+	private exitEditMode(): void {
 		if (!this.isEditing) return;
+		this.normalizeInput();
 		this.isEditing = false;
 		this.displayEl.style.display = "";
 		this.editContainer.style.display = "none";
 		this.updateDisplay();
 	}
 
-	updateDisplay(): void {
+	private normalizeInput() {
+		// Normalize the input value (removes leading 0s, trailing dots, etc)
+		const parsed = this.parseValue(this.getValue());
+		if(parsed != null && parsed.value != null) {
+			this.numberComponent.setValue(`${parsed.value}`);
+			this.adjustInputWidth();
+			this.unitComponent.setValue(parsed.unit);
+		}
+	}
+
+	private updateDisplay(): void {
 		const parsed = this.parseValue(this.getValue());
 		const settings = this.getSettings();
 		
-		if (parsed?.value == null || parsed?.unit == null) {
+		if (parsed == null || parsed.value == null) {
 			this.displayEl.textContent = "";
 			return;
 		}
@@ -245,7 +251,7 @@ class MeasurementTypeComponent extends PropertyWidgetComponentNew<"measurement",
 		this.displayEl.textContent = `${displayValue}${shorthand}`;
 	}
 
-	adjustInputWidth(): void {
+	private adjustInputWidth(): void {
 		const input = this.numberComponent.inputEl;
 		const value = input.value || input.placeholder || "0";
 		
@@ -271,22 +277,38 @@ class MeasurementTypeComponent extends PropertyWidgetComponentNew<"measurement",
 		input.style.width = `${newWidth}px`;
 	}
 
-	commit(): void {
+	private commit(): void {
 		const number = this.numberComponent.getValue();
 		const unit = this.unitComponent.getValue();
+
 		if (number == null || unit == null) {
 			return;
 		}
-		this.setValue({ value: Number(number), unit: unit });
+
+		// Reset proerty value when input values are empty
+		if(number === '' && (unit === '' || unit === null || unit === undefined || unit === DEFAULT_UNIT)) {
+			this.resetValue();
+			return;
+		}
+		this.setValue({ value: number === '' ? null : Number(number), unit: unit });
 		if (this.isEditing) {
 			this.updateDisplay();
 		}
 	}
 
+	private resetValue() {
+		this.numberComponent.setValue('');
+		this.unitComponent.setValue(DEFAULT_UNIT);
+		// Explicitly call with `null` to reset value
+		super.setValue(null);
+	}
+
 	getValue(): MeasurementValue {
+		const value = this.numberComponent.getValue();
+		const unit = this.unitComponent.getValue();
 		return {
-			value: Number(this.numberComponent.getValue()),
-			unit: this.unitComponent.getValue(),
+			value: value == null || value === '' ? null : Number(value),
+			unit: unit,
 		};
 	}
 
@@ -298,7 +320,7 @@ class MeasurementTypeComponent extends PropertyWidgetComponentNew<"measurement",
 		}
 		
 		if (current.value !== parsed.value) {
-			this.numberComponent.setValue(`${parsed.value}`);	
+			this.numberComponent.setValue(`${parsed.value}`);
 			this.adjustInputWidth();
 		}
 		if (current.unit !== parsed.unit) {
@@ -313,5 +335,3 @@ class MeasurementTypeComponent extends PropertyWidgetComponentNew<"measurement",
 		}
 	}
 }
-
-
