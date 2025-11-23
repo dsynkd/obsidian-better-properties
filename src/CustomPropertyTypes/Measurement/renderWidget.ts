@@ -6,7 +6,7 @@ import { PropertyRenderContext } from "obsidian-typings";
 
 type MeasurementValue = { value: number | undefined; unit: string } | undefined;
 
-const DEFAULT_UNIT = "Inch";
+const DEFAULT_UNIT = "Unknown";
 
 // Default units that will be used if no units are configured in settings
 export const DEFAULT_UNITS: Record<string, string> = {
@@ -75,19 +75,17 @@ class MeasurementTypeComponent extends PropertyWidgetComponentNew<"measurement",
 
 	parseValue = (v: unknown): MeasurementValue => {
 		if (!v || typeof v !== "object") {
-			console.warn("[MeasurementTypeComponent.parseValue] Could not parse value")
-			return { value: undefined, unit: "" };
+			return { value: undefined, unit: DEFAULT_UNIT };
 		}
 
 		const maybe = v as { value?: unknown; unit?: unknown };
-		if (maybe.value == null || typeof maybe.unit !== "string" || !maybe.unit) {
-			console.warn(`[MeasurementTypeComponent.parseValue] Could not parse value (value: ${maybe.value}, unit: ${maybe.unit})`)
-			return { value: undefined, unit: "" };
+		if (maybe.value == null || maybe.value == "" || typeof maybe.unit !== "string") {
+			return { value: undefined, unit: DEFAULT_UNIT };
 		}
 
 		return {
 			value: Number(maybe.value),
-			unit: maybe.unit
+			unit: maybe.unit ?? DEFAULT_UNIT
 		};
 	};
 
@@ -185,6 +183,15 @@ class MeasurementTypeComponent extends PropertyWidgetComponentNew<"measurement",
 			this.unitComponent.addOption(unit, unit);
 		});
 
+		// Add placeholder
+		const placeholder = document.createElement("option");
+		placeholder.value = "Unknown";
+		placeholder.disabled = true;
+		placeholder.selected = true;
+		placeholder.hidden = true;
+		placeholder.innerText = "Select Unit";
+		this.unitComponent.selectEl.prepend(placeholder)
+
 		// Handle blur on dropdown to exit edit mode
 		this.unitComponent.selectEl.addEventListener("blur", () => {
 			// Use a small timeout to check if focus moved to the input
@@ -265,7 +272,12 @@ class MeasurementTypeComponent extends PropertyWidgetComponentNew<"measurement",
 	}
 
 	commit(): void {
-		this.setValue({ value: Number(this.numberComponent.getValue()), unit: this.unitComponent.getValue() });
+		const number = this.numberComponent.getValue();
+		const unit = this.unitComponent.getValue();
+		if (number == null || unit == null) {
+			return;
+		}
+		this.setValue({ value: Number(number), unit: unit });
 		if (this.isEditing) {
 			this.updateDisplay();
 		}
@@ -282,7 +294,6 @@ class MeasurementTypeComponent extends PropertyWidgetComponentNew<"measurement",
 		const parsed = this.parseValue(v);
 		const current = this.getValue();
 		if(parsed == null || current == null) {
-			console.warn("[MeasurementTypeComponent.setValue] parsed or current value is null");
 			return;
 		}
 		
