@@ -29,5 +29,6 @@ export const measurementSettingsSchema = v.optional(
 				})
 			)
 		),
+		defaultUnit: v.optional(v.string()),
 	})
 ) satisfies PropertyTypeSchema;

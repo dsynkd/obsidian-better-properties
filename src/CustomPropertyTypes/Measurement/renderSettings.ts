@@ -1,3 +1,4 @@
+import { Setting } from "obsidian";
 import { CustomPropertyType } from "../types";
 import { text } from "~/i18next";
 import { typeKey } from "./index";
@@ -48,6 +49,24 @@ export const renderSettings: CustomPropertyType["renderSettings"] = ({
 			typeSettings: settings,
 		});
 	});
+
+	// Default Unit setting
+	new Setting(parentEl)
+		.setName(text("customPropertyTypes.measurement.settings.defaultUnit.title"))
+		.addDropdown((dropdown) => {
+			dropdown.addOption("Unknown", text("customPropertyTypes.measurement.settings.defaultUnit.none"));
+			
+			const units = settings.units || getDefaultUnitsArray();
+			units.forEach((unit) => {
+				dropdown.addOption(unit.name, unit.name);
+			});
+			
+			dropdown.setValue(settings.defaultUnit || "Unknown");
+			
+			dropdown.onChange((value) => {
+				settings.defaultUnit = value === "Unknown" ? undefined : value;
+			});
+		});
 
 	const list = new ListSetting<Unit>(parentEl)
 		.setName(text("customPropertyTypes.measurement.settings.units.title"))
