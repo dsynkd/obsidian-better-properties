@@ -102,7 +102,6 @@ export const renderSettings: CustomPropertyType["renderSettings"] = ({
 		});
 	});
 
-	// Default Unit setting
 	let defaultUnitDropdown: DropdownComponent | null = null;
 
 	const updateDefaultUnitDropdown = () => {
@@ -124,7 +123,8 @@ export const renderSettings: CustomPropertyType["renderSettings"] = ({
 		
 		if(isDefaultUnitValid) {
 			defaultUnitDropdown.setValue(settings.defaultUnit ?? "Unknown");
-		} else { // Reset Default Unit value, possibly because it was deleted from list
+		} else {
+			// Reset Default Unit value, possibly because it was deleted from list
 			settings.defaultUnit = undefined;
 		}
 	};
@@ -185,6 +185,11 @@ export const renderSettings: CustomPropertyType["renderSettings"] = ({
 						})
 				)
 				.addDeleteButton();
+			
+			// Focus item only if new item being created
+			if (name === '') {
+				item.focusCallback();
+			}
 		})
 		.renderAllItems()
 		.addFooterButton((btn) =>
