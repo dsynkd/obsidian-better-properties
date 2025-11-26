@@ -19,7 +19,7 @@ export const betterPropertiesSettingsSchema = v.object({
 	propertyLabelWidth: v.optional(v.number(), undefined),
 	defaultLabelWidth: v.optional(v.string(), "9em"), // not UI facing
 	hiddenPropertyTypes: v.optional(v.array(v.string()), [] satisfies string[]),
-	enableHiddenProperties: v.optional(v.boolean(), true)
+	enableHiddenProperties: v.optional(v.boolean(), false)
 });
 
 export type BetterPropertiesSettings = Prettify<
