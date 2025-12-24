@@ -10,7 +10,7 @@ type MeasurementSettings = NonNullable<ReturnType<typeof getPropertyTypeSettings
 type Unit = NonNullable<MeasurementSettings["units"]>[number];
 
 // Default units that will be used if no units are configured in settings
-const DEFAULT_UNITS: Record<string, string> = {
+export const DEFAULT_UNITS: Record<string, string> = {
 	// Metric length
 	"Millimeter": "mm",
 	"Centimeter": "cm",
