@@ -3,7 +3,8 @@ import { CustomPropertyType } from "../types";
 import { PropertyWidgetComponentNew } from "../utils";
 import BetterProperties from "~/main";
 import { PropertyRenderContext } from "obsidian-typings";
-import { DEFAULT_UNITS } from "./renderSettings";
+import { PresetSelectionModal, UNIT_PRESETS } from "./presets";
+import { setPropertyTypeSettings } from "../utils";
 
 type MeasurementValue = { value: number | null; unit: string } | null;
 type MeasurementSettings = { units?: Array<{ name: string; shorthand: string }>, defaultUnit?: string };
@@ -59,15 +60,10 @@ class MeasurementTypeComponent extends PropertyWidgetComponentNew<"measurement",
 	) {
 		super(plugin, container, initial, ctx);
 
-		const settings = this.getSettings();
-		this.units = this.loadUnits(settings);
-		this.defaultUnit = settings?.defaultUnit || UNKNOWN_UNIT;
-		this.createDisplayView(container)
+		this.createDisplayView(container);
 		this.createEditContainer(container);
-		this.initializeValues(initial);
-		this.adjustInputWidth();
-		this.updateDisplay();
 		this.onFocus = () => { this.enterEditMode() };
+		this.initializeUnits();
 	}
 
 	private createDisplayView(el: HTMLElement) {
@@ -119,18 +115,6 @@ class MeasurementTypeComponent extends PropertyWidgetComponentNew<"measurement",
 		const unitEl = this.editContainer.createDiv({ cls: "better-properties-measurement-select" });
 
 		this.unitComponent = new DropdownComponent(unitEl);
-		Object.keys(this.units).forEach((unit) => {
-			this.unitComponent.addOption(unit, unit);
-		});
-
-		// Add placeholder
-		const placeholder = document.createElement("option");
-		placeholder.value = "Unknown";
-		placeholder.disabled = true;
-		placeholder.selected = true;
-		placeholder.hidden = true;
-		placeholder.innerText = "Unit";
-		this.unitComponent.selectEl.prepend(placeholder)
 
 		// Handle blur on dropdown to exit edit mode
 		this.unitComponent.selectEl.addEventListener("blur", () => {
@@ -145,22 +129,66 @@ class MeasurementTypeComponent extends PropertyWidgetComponentNew<"measurement",
 		this.unitComponent.onChange(() => this.commit());
 	}
 
+	private async initializeUnits(): Promise<void> {
+		const settings = this.getSettings();
+		
+		// Load units (may prompt for preset if empty)
+		this.units = await this.loadUnits(settings);
+		this.defaultUnit = settings?.defaultUnit || UNKNOWN_UNIT;
+		this.updateUnitComponent();
+		this.initializeValues(this.value);
+		this.adjustInputWidth();
+		this.updateDisplay();
+	}
+
+	private async loadUnits(settings: MeasurementSettings): Promise<Record<string, string>> {
+		if (!settings?.units || settings.units.length === 0) {
+			const modal = new PresetSelectionModal(this.plugin.app);
+			const presetKey = (await modal.selectPreset()) ?? 'length';
+			settings.units = UNIT_PRESETS[presetKey]
+		}
+		
+		setPropertyTypeSettings({
+			plugin: this.plugin,
+			property: this.ctx.key,
+			type: "measurement",
+			typeSettings: settings,
+		});
+		
+		// Units already configured, convert to the format we need
+		return settings.units.reduce((acc, unit) => {
+			acc[unit.name] = unit.shorthand;
+			return acc;
+		}, {} as Record<string, string>);
+	}
+
+	private updateUnitComponent(): void {
+		// Clear existing options
+		this.unitComponent.selectEl.innerHTML = "";
+		this.addUnitComponentPlaceholder()
+		
+		// Add unit options
+		Object.keys(this.units).forEach((unit) => {
+			this.unitComponent.addOption(unit, unit);
+		});
+	}
+
+	private addUnitComponentPlaceholder() {
+		const placeholder = document.createElement("option");
+		placeholder.value = "Unknown";
+		placeholder.disabled = true;
+		placeholder.selected = true;
+		placeholder.hidden = true;
+		placeholder.innerText = "Unit";
+		this.unitComponent.selectEl.prepend(placeholder);
+	}
+
 	private initializeValues(initial: unknown) {
 		const parsed = this.parseValue(initial);
 		if (parsed != null && parsed.value != null) {
 			this.numberComponent.setValue(`${parsed.value}`);
 		}
 		this.unitComponent.setValue(parsed?.unit ?? this.defaultUnit);
-	}
-
-	private loadUnits(settings: MeasurementSettings): Record<string, string> {
-		if (!settings?.units || settings.units.length === 0) {
-			return DEFAULT_UNITS;
-		}
-		return settings.units.reduce((acc, unit) => {
-			acc[unit.name] = unit.shorthand;
-			return acc;
-		}, {} as Record<string, string>);
 	}
 
 	private enterEditMode(): void {
