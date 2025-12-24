@@ -161,10 +161,8 @@ export const renderSettings: CustomPropertyType["renderSettings"] = ({
 						.setValue(name)
 						.onChange((v) => {
 							const matched = list.value[item.index];
-							console.log(`matched: ${matched}`);
 							if (matched === undefined) return;
 							const oldName = matched.name;
-							console.log(`oldName: ${oldName}`);
 							matched.name = v;
 							// If the default unit was set to the old name, update it to the new name
 							if (settings.defaultUnit === oldName) {
