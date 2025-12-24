@@ -24,6 +24,11 @@ class MeasurementTypeComponent extends PropertyWidgetComponentNew<"measurement",
 
 	parseValue = (v: unknown): MeasurementValue => {
 		if (v == null || typeof v !== "object") {
+			if(typeof v === "number") {
+				return { value: v, unit: this.defaultUnit }
+			} else if (typeof v === "string" && Number(v)) {
+				return { value: Number(v), unit: this.defaultUnit }
+			}
 			return null;
 		}
 
