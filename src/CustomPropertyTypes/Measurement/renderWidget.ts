@@ -3,6 +3,7 @@ import { CustomPropertyType } from "../types";
 import { PropertyWidgetComponentNew } from "../utils";
 import BetterProperties from "~/main";
 import { PropertyRenderContext } from "obsidian-typings";
+import { DEFAULT_UNITS } from "./renderSettings";
 
 type MeasurementValue = { value: number | null; unit: string } | null;
 type MeasurementSettings = { units?: Array<{ name: string; shorthand: string }>, defaultUnit?: string };
@@ -149,7 +150,7 @@ class MeasurementTypeComponent extends PropertyWidgetComponentNew<"measurement",
 
 	private loadUnits(settings: MeasurementSettings): Record<string, string> {
 		if (!settings?.units || settings.units.length === 0) {
-			return {};
+			return DEFAULT_UNITS;
 		}
 		return settings.units.reduce((acc, unit) => {
 			acc[unit.name] = unit.shorthand;
