@@ -38,6 +38,18 @@
     "measurement": {
       "name": "Measurement",
       "settings": {
+        "unitPreset": {
+          "title": "Unit Preset",
+          "desc": "Load a preset to automatically populate the units list with common units for that category.",
+          "loadButton": "Load Preset",
+          "length": "Length",
+          "weight": "Weight",
+          "volume": "Volume",
+          "time": "Time",
+          "temperature": "Temperature",
+          "area": "Area",
+          "speed": "Speed"
+        },
         "defaultUnit": {
           "title": "Default Unit",
           "none": "None"

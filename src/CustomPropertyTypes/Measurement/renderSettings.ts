@@ -5,70 +5,10 @@ import { typeKey } from "./index";
 import { getPropertyTypeSettings, setPropertyTypeSettings } from "../utils";
 import { ListSetting } from "~/classes/ListSetting";
 import { Icon } from "~/lib/types/icons";
+import { PresetSelectionModal, UNIT_PRESETS } from "./presets";
 
 type MeasurementSettings = NonNullable<ReturnType<typeof getPropertyTypeSettings<typeof typeKey>>>;
 type Unit = NonNullable<MeasurementSettings["units"]>[number];
-
-// Default units that will be used if no units are configured in settings
-const DEFAULT_UNITS: Record<string, string> = {
-	// Metric length
-	"Millimeter": "mm",
-	"Centimeter": "cm",
-	"Meter": "m",
-	"Kilometer": "km",
-	// Imperial length
-	"Inch": "in",
-	"Foot": "ft",
-	"Yard": "yd",
-	"Mile": "mi",
-	// Metric mass
-	"Milligram": "mg",
-	"Gram": "g",
-	"Kilogram": "kg",
-	"Metric Ton": "t",
-	// Imperial mass
-	"Ounce": "oz",
-	"Pound": "lb",
-	"Liter": "l",
-	// Volume imperial
-	"Teaspoon": "tsp",
-	"Tablespoon": "tbsp",
-	"Fluid Ounce": "fl oz",
-	"Cup": "cup",
-	"Pint": "pt",
-	"Quart": "qt",
-	"Gallon": "gal",
-	// Area
-	"Square Millimeter": "mm²",
-	"Square Centimeter": "cm²",
-	"Square Meter": "m²",
-	"Square Kilometer": "km²",
-	"Square Inch": "in²",
-	"Square Foot": "ft²",
-	"Square Yard": "yd²",
-	"Acre": "acre",
-	// Speed
-	"Meters per Second": "m/s",
-	"Kilometers per Hour": "km/h",
-	"Miles per Hour": "mph",
-	// Temperature
-	"Celsius": "°C",
-	"Fahrenheit": "°F",
-	"Kelvin": "K",
-	// Time
-	"Millisecond": "ms",
-	"Second": "s",
-	"Minute": "min",
-	"Hour": "h",
-};
-
-// Convert DEFAULT_UNITS Record to array format for settings
-const getDefaultUnitsArray = (): Unit[] => {
-	return Object.entries(DEFAULT_UNITS).map(([name, shorthand]) => ({
-		name,
-		shorthand,
-	}));
-};
 
 export const renderSettings: CustomPropertyType["renderSettings"] = ({
 	modal,
@@ -82,9 +22,12 @@ export const renderSettings: CustomPropertyType["renderSettings"] = ({
 		type: typeKey,
 	});
 
-	// Initialize with default units if empty
-	if (!settings.units || settings.units.length === 0) {
-		settings.units = getDefaultUnitsArray();
+	// Check if this is a new measurement property (no units configured)
+	const isNewProperty = !settings.units || settings.units.length === 0;
+	
+	// Initialize with empty array if new (we'll prompt for preset)
+	if (isNewProperty) {
+		settings.units = [];
 		setPropertyTypeSettings({
 			plugin,
 			property,
@@ -94,6 +37,10 @@ export const renderSettings: CustomPropertyType["renderSettings"] = ({
 	}
 
 	modal.onTabChange(() => {
+		
+		// Filter out units with empty string as their name
+		settings.units = settings.units?.filter(unit => unit.name.trim() !== "") || [];
+
 		setPropertyTypeSettings({
 			plugin,
 			property,
@@ -143,7 +90,7 @@ export const renderSettings: CustomPropertyType["renderSettings"] = ({
 	const list = new ListSetting<Unit>(parentEl)
 		.setName(text("customPropertyTypes.measurement.settings.units.title"))
 		.setDesc(text("customPropertyTypes.measurement.settings.units.desc"))
-		.setValue(settings.units)
+		.setValue(settings.units ?? [])
 		.onChange((v) => {
 			settings.units = [...v];
 			updateDefaultUnitDropdown();
@@ -161,10 +108,8 @@ export const renderSettings: CustomPropertyType["renderSettings"] = ({
 						.setValue(name)
 						.onChange((v) => {
 							const matched = list.value[item.index];
-							console.log(`matched: ${matched}`);
 							if (matched === undefined) return;
 							const oldName = matched.name;
-							console.log(`oldName: ${oldName}`);
 							matched.name = v;
 							// If the default unit was set to the old name, update it to the new name
 							if (settings.defaultUnit === oldName) {
@@ -184,7 +129,12 @@ export const renderSettings: CustomPropertyType["renderSettings"] = ({
 							matched.shorthand = v;
 						})
 				)
-				.addDeleteButton();
+				if(settings.units) {
+					const validUnits = settings.units.filter(unit => unit.name.trim() !== "")
+					if(validUnits.length > 1) {
+						item.addDeleteButton()
+					}
+				}
 			
 			// Focus item only if new item being created
 			if (name === '') {
@@ -194,6 +144,19 @@ export const renderSettings: CustomPropertyType["renderSettings"] = ({
 		.renderAllItems()
 		.addFooterButton((btn) =>
 			btn
+				.setButtonText(text("customPropertyTypes.measurement.settings.unitPreset.loadButton" as "customPropertyTypes.measurement.settings.unitPreset.length"))
+				.setIcon("lucide-package" satisfies Icon)
+				.setCta()
+				.onClick(async () => {
+					const modal = new PresetSelectionModal(plugin.app);
+					const presetKey = await modal.selectPreset()
+					if(presetKey) {
+						applyPreset(presetKey)
+					}
+				})
+		)
+		.addFooterButton((btn) =>
+			btn
 				.setButtonText(text("customPropertyTypes.measurement.settings.units.addButton"))
 				.setIcon("lucide-plus" satisfies Icon)
 				.setCta()
@@ -201,6 +164,17 @@ export const renderSettings: CustomPropertyType["renderSettings"] = ({
 					list.addItem({ name: "", shorthand: "" });
 				})
 		);
+
+	// Function to apply preset
+	const applyPreset = (presetKey: string) => {
+		if (!UNIT_PRESETS[presetKey]) return;
+		
+		const presetUnits = UNIT_PRESETS[presetKey];
+		settings.units = [...presetUnits];
+		list.setValue(settings.units);
+		list.renderAllItems();
+		updateDefaultUnitDropdown();
+	};
 };
 
 
