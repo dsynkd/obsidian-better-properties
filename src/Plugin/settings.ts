@@ -19,7 +19,7 @@ export const betterPropertiesSettingsSchema = v.object({
 	propertyLabelWidth: v.optional(v.number(), undefined),
 	defaultLabelWidth: v.optional(v.string(), "9em"), // not UI facing
 	hiddenPropertyTypes: v.optional(v.array(v.string()), [] satisfies string[]),
-	enableHiddenProperties: v.optional(v.boolean(), false)
+	enableCollapsibleProperties: v.optional(v.boolean(), false)
 });
 
 export type BetterPropertiesSettings = Prettify<
@@ -41,8 +41,8 @@ export class BetterPropertiesSettingsTab extends PluginSettingTab {
 
 		// Set initial body data attribute based on current setting
 		document.body.setAttribute(
-			"data-better-properties-hidden-feature-disabled",
-			(!(settings.enableHiddenProperties ?? true)).toString()
+			"data-better-properties-collapsible-feature-disabled",
+			(!(settings.enableCollapsibleProperties ?? true)).toString()
 		);
 
 
@@ -78,6 +78,22 @@ export class BetterPropertiesSettingsTab extends PluginSettingTab {
 					});
 			});
 
+			new Setting(containerEl)
+			.setName("Enable Collapsible Properties")
+			.addToggle((toggle) => {
+				toggle
+					.setValue(settings.enableCollapsibleProperties ?? true)
+					.onChange((value) => {
+						settings.enableCollapsibleProperties = value;
+						plugin.saveSettings();
+						// Set body data attribute to control CSS visibility
+						document.body.setAttribute(
+							"data-better-properties-collapsible-feature-disabled",
+							(!value).toString()
+						);
+					});
+			});
+
 		new Setting(containerEl)
 			.setName("Hidden property types")
 			.setDesc("The following types will be disabled.")
@@ -100,23 +116,6 @@ export class BetterPropertiesSettingsTab extends PluginSettingTab {
 							});
 					})
 					.renderValues();
-			});
-
-		new Setting(containerEl)
-			.setName("Enable Hidden Properties")
-			.setDesc("Allow properties to be marked as hidden.")
-			.addToggle((toggle) => {
-				toggle
-					.setValue(settings.enableHiddenProperties ?? true)
-					.onChange((value) => {
-						settings.enableHiddenProperties = value;
-						plugin.saveSettings();
-						// Set body data attribute to control CSS visibility
-						document.body.setAttribute(
-							"data-better-properties-hidden-feature-disabled",
-							(!value).toString()
-						);
-					});
 			});
 
 		new Setting(containerEl).setHeading().setName("Warnings");
