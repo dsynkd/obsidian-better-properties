@@ -700,7 +700,7 @@ div.metadata-content {
 	}
 }
 
-.better-properties-measurement-container {
+.better-properties-measurement-container, .better-properties-currency-container {
 	display: flex;
 	gap: 4px;
 	align-items: center;
@@ -793,7 +793,8 @@ div.better-properties-mod-hidden {
 	transform: var(--better-properties-transform);
 }
 
-.better-properties-measurement-number {
+.better-properties-measurement-number,
+.better-properties-currency-number {
 	& input[type="number"] {
 		width: auto;
 		min-width: 3ch;

@@ -18,6 +18,7 @@ import { arraySettingsSchema } from "./Array";
 import { relationSettingsSchema } from "./Relation";
 import { measurementSettingsSchema } from "./Measurement";
 import { codeSettingsSchema } from "./Code";
+import { currencySettingsSchema } from "./Currency";
 
 type SettingsBase = v.ObjectSchema<
 	Record<string, PropertyTypeSchema>,
@@ -55,7 +56,8 @@ export const propertySettingsSchema = v.object({
 	time: timeSettingsSchema,
 	numeric: numericSettingsSchema,
 	measurement: measurementSettingsSchema,
-	code: codeSettingsSchema
+	code: codeSettingsSchema,
+	currency: currencySettingsSchema,
 }) satisfies SettingsBase;
 
 export const getDefaultPropertySettings =

@@ -31,6 +31,7 @@ import { arrayPropertyType } from "./Array";
 import { measurementPropertyType } from "./Measurement";
 import { Icon } from "~/lib/types/icons";
 import { codePropertyType } from "./Code";
+import { currencyPropertyType } from "./Currency";
 // import { relationPropertyType } from "./Relation";
 
 export const getCustomPropertyTypesArr = (): CustomPropertyType[] => [
@@ -50,7 +51,8 @@ export const getCustomPropertyTypesArr = (): CustomPropertyType[] => [
 	timePropertyType,
 	numericPropertyType,
 	measurementPropertyType,
-	codePropertyType
+	codePropertyType,
+	currencyPropertyType
 ];
 
 export const getCustomPropertyTypesRecord = (): Record<
