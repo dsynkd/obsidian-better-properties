@@ -24,6 +24,13 @@ export const getTrueProperty = (property: string) => {
 		.join(".");
 };
 
+/**
+ * Checks if a property is a sub-property of either an array (parent.0) or object (parent.child)
+ */
+export const isSubProperty = (property: string): boolean => {
+	return property.includes(".");
+};
+
 export const getPropertySettings = ({
 	plugin,
 	property,

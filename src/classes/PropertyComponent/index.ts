@@ -8,6 +8,8 @@ import { obsidianText } from "~/i18next/obsidian";
 import { Icon } from "~/lib/types/icons";
 import BetterProperties from "~/main";
 import { ConfirmationModal } from "../ConfirmationModal";
+import { getPropertySettings, setPropertySettings } from "~/CustomPropertyTypes/utils";
+import { customPropertyTypePrefix } from "~/lib/constants";
 
 export class PropertyComponent extends ValueComponent<unknown> {
 	propertyEl: HTMLDivElement | undefined;
@@ -67,6 +69,24 @@ export class PropertyComponent extends ValueComponent<unknown> {
 	}
 
 	getTypeInfo(): TypeInfo {
+		// Check if a custom property type is set in settings
+		const settings = getPropertySettings({ plugin: this.plugin, property: this.key });
+		if (settings.general?.customPropertyType) {
+			const customType = settings.general.customPropertyType;
+			const widget = this.plugin.app.metadataTypeManager.registeredTypeWidgets[customType];
+			if (widget) {
+				// Return a TypeInfo with the custom type as the expected widget
+				const baseTypeInfo = this.plugin.app.metadataTypeManager.getTypeInfo(
+					this.key,
+					this.value
+				);
+				return {
+					...baseTypeInfo,
+					expected: widget,
+				};
+			}
+		}
+		
 		return this.plugin.app.metadataTypeManager.getTypeInfo(
 			this.key,
 			this.value
@@ -122,15 +142,51 @@ export class PropertyComponent extends ValueComponent<unknown> {
 		setIcon(iconEl, this.getTypeInfo().expected.icon);
 
 		iconEl.addEventListener("click", (e) => {
-			new Menu()
-				.addItem((item) => {
-					item
-						.setSection("action")
-						.setTitle(obsidianText("properties.option-property-type"))
-						.setIcon("lucide-info" satisfies Icon);
-					item.setSubmenu();
-					// sub items are added elsewhere in src/MetadataEditor
-				})
+			const menu = new Menu();
+			const typeItem = menu.addItem((item) => {
+				item
+					.setSection("action")
+					.setTitle(obsidianText("properties.option-property-type"))
+					.setIcon("lucide-info" satisfies Icon);
+				const submenu = item.setSubmenu();
+				
+				// Populate the property type submenu with all available widgets
+				Object.values(this.plugin.app.metadataTypeManager.registeredTypeWidgets).forEach((widget) => {
+					if (widget.reservedKeys) return;
+					submenu.addItem((subItem) => {
+						const isBuiltin = !widget.type.startsWith(customPropertyTypePrefix);
+						subItem.onClick(() => {
+							const settings = getPropertySettings({ plugin: this.plugin, property: this.key });
+							if (!settings.general) {
+								settings.general = {
+									icon: "",
+									hidden: false,
+									defaultValue: undefined,
+									alias: undefined,
+									suggestions: undefined,
+									collapsed: false,
+									customPropertyType: widget.type,
+								};
+							} else {
+								settings.general.customPropertyType = widget.type;
+							}
+							setPropertySettings({ plugin: this.plugin, property: this.key, settings });
+							// Trigger a refresh
+							this.plugin.app.metadataTypeManager.trigger("changed", this.key);
+						});
+						subItem.setTitle(widget.name()).setIcon(widget.icon);
+
+						// Check if this is the currently assigned type
+						const currentSettings = getPropertySettings({ plugin: this.plugin, property: this.key });
+						const isAssigned = currentSettings.general?.customPropertyType === widget.type;
+						if (isAssigned) {
+							subItem.setChecked(true);
+						}
+					});
+				});
+			});
+			
+			menu
 				.addItem((item) =>
 					item
 						.setSection("clipboard")

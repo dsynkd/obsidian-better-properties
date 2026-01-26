@@ -10,7 +10,7 @@ import { obsidianText } from "~/i18next/obsidian";
 import { text } from "~/i18next";
 import { customPropertyTypePrefix } from "~/lib/constants";
 import { MetadataTypeManager } from "obsidian-typings";
-import { getTrueProperty } from "~/CustomPropertyTypes/utils";
+import { getTrueProperty, isSubProperty, triggerPropertyTypeChange, getPropertySettings, setPropertySettings } from "~/CustomPropertyTypes/utils";
 
 export const onFilePropertyMenu = (
 	plugin: BetterProperties,
@@ -20,7 +20,7 @@ export const onFilePropertyMenu = (
 	const { metadataTypeManager } = plugin.app;
 
 	const trueProperty = getTrueProperty(property);
-	const isArraySubProperty = trueProperty !== property;
+	const isSubProp = isSubProperty(property);
 
 	const found = menu.items.find((item) => {
 		if (item instanceof MenuSeparator) return false;
@@ -33,6 +33,7 @@ export const onFilePropertyMenu = (
 			found,
 			metadataTypeManager,
 			property,
+			plugin,
 		});
 	}
 
@@ -58,7 +59,7 @@ export const onFilePropertyMenu = (
 			})
 	);
 
-	if (!isArraySubProperty) {
+	if (!isSubProp) {
 		menu.addItem((item) =>
 			item
 				.setSection("action")
@@ -80,7 +81,7 @@ export const onFilePropertyMenu = (
 			})
 	);
 
-	if (!isArraySubProperty) {
+	if (!isSubProp) {
 		menu.addItem((item) =>
 			item
 				.setSection("danger")
@@ -107,10 +108,12 @@ const recreateTypeOptionsSubmenu = ({
 	found,
 	metadataTypeManager,
 	property,
+	plugin,
 }: {
 	found: MenuItem;
 	metadataTypeManager: MetadataTypeManager;
 	property: string;
+	plugin: BetterProperties;
 }) => {
 	found.submenu!.items.forEach((item) => {
 		(item as MenuItem).dom.remove();
@@ -126,12 +129,36 @@ const recreateTypeOptionsSubmenu = ({
 	const BETTER_PROPERTIES = "better-properties";
 	submenu.addSections([OBSIDIAN, BETTER_PROPERTIES]);
 
+	const isSubProp = isSubProperty(property);
+	
 	Object.values(metadataTypeManager.registeredTypeWidgets).forEach((widget) => {
 		if (widget.reservedKeys) return;
 		submenu.addItem((item) => {
 			const isBuiltin = !widget.type.startsWith(customPropertyTypePrefix);
 			item.onClick(() => {
-				metadataTypeManager.setType(property, widget.type);
+				if (isSubProp) {
+					// For sub-properties, store the custom type in settings
+					const settings = getPropertySettings({ plugin, property });
+					if (!settings.general) {
+						settings.general = {
+							icon: "",
+							hidden: false,
+							defaultValue: undefined,
+							alias: undefined,
+							suggestions: undefined,
+							collapsed: false,
+							customPropertyType: widget.type,
+						};
+					} else {
+						settings.general.customPropertyType = widget.type;
+					}
+					setPropertySettings({ plugin, property, settings });
+				} else {
+					// For top-level properties, use metadata type manager
+					metadataTypeManager.setType(property, widget.type);
+				}
+				// Trigger refresh for sub-properties to ensure parent container re-renders
+				triggerPropertyTypeChange(metadataTypeManager, property);
 			});
 			item.setTitle(widget.name()).setIcon(widget.icon);
 
@@ -142,7 +169,18 @@ const recreateTypeOptionsSubmenu = ({
 			// TODO make this an optional in settings
 			// item.setSection(isBuiltin ? OBSIDIAN : BETTER_PROPERTIES);
 
-			if (metadataTypeManager.getAssignedWidget(property) === widget.type) {
+			// Check if this widget is the currently assigned one
+			let isAssigned = false;
+			if (isSubProp) {
+				// For sub-properties, check settings
+				const settings = getPropertySettings({ plugin, property });
+				isAssigned = settings.general?.customPropertyType === widget.type;
+			} else {
+				// For top-level properties, check metadata type manager
+				isAssigned = metadataTypeManager.getAssignedWidget(property) === widget.type;
+			}
+			
+			if (isAssigned) {
 				item.setChecked(true);
 			}
 		});
