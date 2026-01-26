@@ -9,6 +9,7 @@ import {
 import { customPropertyTypePrefix } from "~/lib/constants";
 import { MetadataTypeManager } from "obsidian-typings";
 import { NonNullishObject } from "~/lib/utils";
+import { TextComponent } from "obsidian";
 
 /**
  * Array sub-properties are in the format `<parent>.<index>`. This function replaces the index with a `#` to properly get/set settings for the sub-property
@@ -206,6 +207,34 @@ export abstract class PropertyWidgetComponentNew<
 			type: this.type,
 			typeSettings: settings,
 		});
+	}
+
+	// Helper function for adjusting width of an text component dynamically based on content
+	adjustInputWidth(component: TextComponent): void {
+		const PADDING = 18;
+		const input = component.inputEl;
+		const value = input.value || input.placeholder || "0";
+		
+		// Create a temporary element to measure text width
+		const temp = document.createElement("span");
+		temp.style.visibility = "hidden";
+		temp.style.position = "absolute";
+		temp.style.fontSize = getComputedStyle(input).fontSize;
+		temp.style.fontFamily = getComputedStyle(input).fontFamily;
+		temp.style.fontWeight = getComputedStyle(input).fontWeight;
+		temp.style.letterSpacing = getComputedStyle(input).letterSpacing;
+		temp.textContent = value;
+		
+		document.body.appendChild(temp);
+		const width = temp.getBoundingClientRect().width;
+		document.body.removeChild(temp);
+		
+		// Set width with some padding, respecting min/max constraints
+		const minWidth = parseFloat(getComputedStyle(input).minWidth) || 0;
+		const maxWidth = parseFloat(getComputedStyle(input).maxWidth) || Infinity;
+		const newWidth = Math.max(minWidth, Math.min(maxWidth, width + PADDING));
+		
+		input.style.width = `${newWidth}px`;
 	}
 }
 
