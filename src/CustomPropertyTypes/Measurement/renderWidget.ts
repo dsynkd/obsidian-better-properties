@@ -90,8 +90,10 @@ class MeasurementTypeComponent extends PropertyWidgetComponentNew<"measurement",
 		this.numberComponent.inputEl.type = "number";
 		
 		// Add event listener to adjust width on input
-		this.numberComponent.inputEl.addEventListener("input", () => {
-			this.adjustInputWidth();
+		["input", "focus"].forEach(event => {
+			this.numberComponent.inputEl.addEventListener(event, () => {
+				this.adjustInputWidth(this.numberComponent);
+			});
 		});
 
 		// Handle blur to exit edit mode
@@ -157,7 +159,6 @@ class MeasurementTypeComponent extends PropertyWidgetComponentNew<"measurement",
 		this.defaultUnit = settings?.defaultUnit || UNKNOWN_UNIT;
 		this.updateUnitComponent();
 		this.initializeValues(this.value);
-		this.adjustInputWidth();
 		this.updateDisplay();
 	}
 
@@ -215,8 +216,6 @@ class MeasurementTypeComponent extends PropertyWidgetComponentNew<"measurement",
 		const parsed = this.parseValue(this.getValue());
 		if(parsed != null && parsed.value != null) {
 			this.numberComponent.setValue(`${parsed.value}`);
-			this.adjustInputWidth();
-			this.unitComponent.setValue(parsed.unit);
 		}
 	}
 
@@ -232,32 +231,6 @@ class MeasurementTypeComponent extends PropertyWidgetComponentNew<"measurement",
 		const displayValue = parsed.value;
 		const shorthand = this.units[parsed.unit] ?? (settings?.units?.find(u => u.name === parsed.unit)?.shorthand ?? "");
 		this.displayEl.textContent = `${displayValue}${shorthand}`;
-	}
-
-	private adjustInputWidth(): void {
-		const input = this.numberComponent.inputEl;
-		const value = input.value || input.placeholder || "0";
-		
-		// Create a temporary element to measure text width
-		const temp = document.createElement("span");
-		temp.style.visibility = "hidden";
-		temp.style.position = "absolute";
-		temp.style.fontSize = getComputedStyle(input).fontSize;
-		temp.style.fontFamily = getComputedStyle(input).fontFamily;
-		temp.style.fontWeight = getComputedStyle(input).fontWeight;
-		temp.style.letterSpacing = getComputedStyle(input).letterSpacing;
-		temp.textContent = value;
-		
-		document.body.appendChild(temp);
-		const width = temp.getBoundingClientRect().width;
-		document.body.removeChild(temp);
-		
-		// Set width with some padding, respecting min/max constraints
-		const minWidth = parseFloat(getComputedStyle(input).minWidth) || 0;
-		const maxWidth = parseFloat(getComputedStyle(input).maxWidth) || Infinity;
-		const newWidth = Math.max(minWidth, Math.min(maxWidth, width + 18)); // 18px padding
-		
-		input.style.width = `${newWidth}px`;
 	}
 
 	private commit(): void {
@@ -304,7 +277,6 @@ class MeasurementTypeComponent extends PropertyWidgetComponentNew<"measurement",
 		
 		if (current.value !== parsed.value) {
 			this.numberComponent.setValue(`${parsed.value}`);
-			this.adjustInputWidth();
 		}
 		if (current.unit !== parsed.unit) {
 			this.unitComponent.setValue(parsed.unit);

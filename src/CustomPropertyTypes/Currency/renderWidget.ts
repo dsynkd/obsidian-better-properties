@@ -116,8 +116,10 @@ class CurrencyTypeComponent extends PropertyWidgetComponentNew<"currency", Curre
 		this.numberComponent.inputEl.type = "number";
 		this.numberComponent.inputEl.step = "any";
         
-        this.numberComponent.inputEl.addEventListener("input", () => {
-			this.adjustInputWidth();
+        ["input", "focus"].forEach(event => {
+			this.numberComponent.inputEl.addEventListener(event, () => {
+				this.adjustInputWidth(this.numberComponent);
+			});
 		});
 
 		this.numberComponent.inputEl.addEventListener("blur", () => {
@@ -168,7 +170,6 @@ class CurrencyTypeComponent extends PropertyWidgetComponentNew<"currency", Curre
 		this.displayEl.style.display = "none";
 		this.editContainer.style.display = "";
 		this.numberComponent.inputEl.focus();
-        this.adjustInputWidth()
 	}
 
 	private exitEditMode(): void {
@@ -199,32 +200,6 @@ class CurrencyTypeComponent extends PropertyWidgetComponentNew<"currency", Curre
 	private commit(): void {
 		const value = this.getValue();
 		this.setValue(value);
-	}
-
-	private adjustInputWidth(): void {
-		const input = this.numberComponent.inputEl;
-		const value = input.value || input.placeholder || "0";
-		
-		// Create a temporary element to measure text width
-		const temp = document.createElement("span");
-		temp.style.visibility = "hidden";
-		temp.style.position = "absolute";
-		temp.style.fontSize = getComputedStyle(input).fontSize;
-		temp.style.fontFamily = getComputedStyle(input).fontFamily;
-		temp.style.fontWeight = getComputedStyle(input).fontWeight;
-		temp.style.letterSpacing = getComputedStyle(input).letterSpacing;
-		temp.textContent = value;
-		
-		document.body.appendChild(temp);
-		const width = temp.getBoundingClientRect().width;
-		document.body.removeChild(temp);
-		
-		// Set width with some padding, respecting min/max constraints
-		const minWidth = parseFloat(getComputedStyle(input).minWidth) || 0;
-		const maxWidth = parseFloat(getComputedStyle(input).maxWidth) || Infinity;
-		const newWidth = Math.max(minWidth, Math.min(maxWidth, width + 18)); // 18px padding
-		
-		input.style.width = `${newWidth}px`;
 	}
 
 	getValue(): CurrencyValue {
